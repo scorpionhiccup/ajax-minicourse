@@ -23,7 +23,37 @@ function loadData() {
 	var $bg = $('<img>').addClass('bgimg').attr('src', url);
 	$body.append($bg);
 
+	//NYTimes AJAX
+	
+	var api_key = '2bc0e0169aa34e4b81f52e207688c0cc';
+	var nytimes_url = 'https://api.nytimes.com/svc/search/v2/articlesearch.json'
 
+	var params = {"q":address, 'apikey': api_key};
+
+	nytimes_url += '?' + $.param( params );
+
+	$.getJSON(nytimes_url, function(data) {
+
+		var headerText = 'Newspaper articles for ' + address;
+
+		$nytHeaderElem.text(headerText);
+
+        var $ul = $('#nytimes-articles');
+        data.response.docs.forEach(function(doc) {
+			var $li = $('<li>').addClass('article');
+			var headline = doc.headline.print_headline || doc.headline.main;
+			var paragraph = doc.lead_paragraph;
+			if (headline && paragraph) {
+				$('<a>').text(headline).attr('href', doc.web_url).appendTo($li);
+				$('<p>').text(paragraph).appendTo($li);
+				$ul.append($li);
+			}
+        });
+	}).fail(function(err){
+		console.error(err);
+		$nytHeaderElem.text('Unable to use New York Times API.')
+	});
+	
     return false;
 };
 
