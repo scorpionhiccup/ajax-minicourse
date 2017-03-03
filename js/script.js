@@ -28,21 +28,24 @@ function loadData() {
 	var api_key = '2bc0e0169aa34e4b81f52e207688c0cc';
 	var nytimes_url = 'https://api.nytimes.com/svc/search/v2/articlesearch.json'
 
-	var params = {"q":address, 'apikey': api_key};
+	var params = {'q':address, 'apikey': api_key, 'sort': 'newest'};
 
 	nytimes_url += '?' + $.param( params );
 
 	$.getJSON(nytimes_url, function(data) {
-
+		//console.log(data);
 		var headerText = 'Newspaper articles for ' + address;
 
 		$nytHeaderElem.text(headerText);
 
         var $ul = $('#nytimes-articles');
-        data.response.docs.forEach(function(doc) {
+
+        var articles = data.response.docs;
+
+        articles.forEach(function(doc) {
 			var $li = $('<li>').addClass('article');
 			var headline = doc.headline.print_headline || doc.headline.main;
-			var paragraph = doc.lead_paragraph;
+			var paragraph = doc.snippet;
 			if (headline && paragraph) {
 				$('<a>').text(headline).attr('href', doc.web_url).appendTo($li);
 				$('<p>').text(paragraph).appendTo($li);
@@ -51,9 +54,39 @@ function loadData() {
         });
 	}).fail(function(err){
 		console.error(err);
-		$nytHeaderElem.text('Unable to use New York Times API.')
+		$nytHeaderElem.text('Unable to fetch New York Times Articles.')
 	});
 	
+	// Wikipedia AJAX call
+	
+	var wikiTimeout
+
+	var wiki_url = "https://en.wikipedia.org/w/api.php"; 
+	$.ajax({
+		url: wiki_url, 
+		data: { action: 'opensearch', format: 'json', 'search': address, 'list': 'search'},
+		dataType: 'jsonp',
+		complete: function(){
+			console.log(this.url);
+        	//alert(this.url)
+    	},
+    	error: function(jqXHR, textStatus, errorThrown) {
+    		$wikiElem.text('Failed to get Wikipedia resources');
+    	}
+	}).done( function(result) {
+		//console.log(result);
+		var titles = result[1];
+		var urls = result[3];
+		
+		for (var i = 0; i < titles.length; ++i) {
+			var title = titles[i];
+			var url = urls[i];
+			var $li = $('<li>');
+			$('<a>').attr('href', url).text(title).appendTo($li);
+			$wikiElem.append($li);
+		}
+    });
+
     return false;
 };
 
